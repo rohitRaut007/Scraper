@@ -6,7 +6,7 @@ DB_HOST = "localhost"
 DB_PORT = 5432
 DB_NAME = "myntra_scraper"
 DB_USER = "postgres"
-DB_PASSWORD = "Rasengun@2003"
+DB_PASSWORD = "pass321"
 
 def get_connection():
     return psycopg2.connect(
@@ -33,11 +33,11 @@ def validate_product_data(product_data):
     return True
 
 def save_product(product_data, retry=False):
-    # Validate product data before proceeding
     if not validate_product_data(product_data):
         return False
 
-    status = 'pending' if not retry else 'retried'
+    status = 'success' if not retry else 'retried'
+
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:
@@ -47,21 +47,21 @@ def save_product(product_data, retry=False):
                     source_site, source_url, rating, num_of_user_rated,
                     price, currency, region, sizes_available, gender,
                     category, clothing_type, description, style_tags,
+                    
                     created_at, updated_at, status
                 ) VALUES (
                     %(id)s, %(title)s, %(brand)s, %(main_image_url)s, %(other_images_url)s,
                     %(sourceSite)s, %(source_url)s, %(rating)s, %(numOfUserRated)s,
                     %(price)s, %(currency)s, %(region)s, %(sizes_available)s, %(gender)s,
-                    %(category)s, %(clothing_type)s, %(description)s, %(style_tags)s,
+                    %(clothing_type)s, %(category)s, %(description)s, %(style_tags)s,
+                    
                     %(created_At)s, %(updated_At)s, %(status)s
                 )
-                ON CONFLICT (id) DO UPDATE SET
-                    title = EXCLUDED.title,
+                ON CONFLICT (title, source_url) DO UPDATE SET
                     brand = EXCLUDED.brand,
                     main_image_url = EXCLUDED.main_image_url,
                     other_images_url = EXCLUDED.other_images_url,
                     source_site = EXCLUDED.source_site,
-                    source_url = EXCLUDED.source_url,
                     rating = EXCLUDED.rating,
                     num_of_user_rated = EXCLUDED.num_of_user_rated,
                     price = EXCLUDED.price,
@@ -83,7 +83,7 @@ def save_product(product_data, retry=False):
                     "title": product_data["title"],
                     "brand": product_data["brand"],
                     "main_image_url": product_data["main_image_url"],
-                    "other_images_url": product_data["other_images_url"],
+                    "other_images_url": Json(product_data["other_images_url"]),
                     "sourceSite": product_data["sourceSite"],
                     "source_url": product_data["source_url"],
                     "rating": product_data["rating"],
@@ -97,6 +97,8 @@ def save_product(product_data, retry=False):
                     "clothing_type": product_data["clothing_type"],
                     "description": product_data["description"],
                     "style_tags": Json(product_data["style_tags"]),
+                    # "review_images": Json(product_data.get("review_images", [])),
+                    # "review_texts": Json(product_data.get("review_texts", [])),
                     "created_At": product_data["created_At"],
                     "updated_At": product_data["updated_At"],
                     "status": status
@@ -109,7 +111,6 @@ def save_product(product_data, retry=False):
     except Exception as e:
         print(f"[DB ERROR] Insert/Update failed for product '{product_data.get('title', '')}': {e}")
         if not retry:
-            # If it's the first attempt and it failed, retry logic can be added here
             print("[DB] Retrying product insertion...")
             return save_product(product_data, retry=True)
         return False
