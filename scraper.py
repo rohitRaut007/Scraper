@@ -108,7 +108,8 @@ def scrape_product_details(driver, card, product_index):
         for selector in link_selectors:
             try:
                 link_element = card.find_element(By.CSS_SELECTOR, selector)
-                link = link_element.get_attribute("href")
+                relative_link = link_element.get_attribute("href")
+                link = f"https://www.myntra.com{relative_link}" if relative_link and relative_link.startswith("/") else relative_link
                 if link:
                     break
             except:
@@ -117,6 +118,7 @@ def scrape_product_details(driver, card, product_index):
         if not link:
             print(f"[WARNING] No link found for product {product_index}, skipping...")
             return None
+
 
         # Open product page
         driver.execute_script("window.open(arguments[0]);", link)
@@ -275,6 +277,30 @@ def scrape_product_details(driver, card, product_index):
             except:
                 continue
 
+        #         # === Customer Review Images ===
+        # review_images = []
+        # try:
+        #     image_elements = driver.find_elements(By.CSS_SELECTOR, "div.image-thumb-wrapper-container img")
+        #     for img in image_elements:
+        #         img_url = img.get_attribute("src")
+        #         if img_url and img_url.startswith("http") and img_url not in review_images:
+        #             review_images.append(img_url)
+        # except Exception as e:
+        #     print(f"[WARNING] Could not load review images: {e}")
+
+        # # === Customer Review Texts ===
+        # review_texts = []
+        # try:
+        #     review_container = driver.find_element(By.ID, "detailedReviewsContainer")
+        #     text_blocks = review_container.find_elements(By.CSS_SELECTOR, "div.user-review-main.user-review-showRating div.user-review-reviewTextWrapper")
+        #     for block in text_blocks:
+        #         review = block.text.strip()
+        #         if review and len(review) > 10:
+        #             review_texts.append(review)
+        # except Exception as e:
+        #     print(f"[WARNING] Could not load review texts: {e}")
+
+
         # === Enhanced Rating Count ===
         rating_count_selectors = [
             ".index-totalRatings",
@@ -378,10 +404,12 @@ def scrape_product_details(driver, card, product_index):
             "region": REGION,
             "sizes_available": sizes,
             "gender": gender,
-            "category": category,
-            "clothing_type": clothing_type,
+            "category": "western ware",
+            "clothing_type": category,
             "description": product_desc,
             "style_tags": style_tags,
+            # "review_images": review_images,
+            # "review_texts": review_texts,
             "created_At": gmt_time,
             "updated_At": gmt_time
         }
